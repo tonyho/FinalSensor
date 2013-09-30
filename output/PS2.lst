@@ -1,0 +1,240 @@
+C51 COMPILER V9.00   PS2                                                                   10/04/2010 21:52:29 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE PS2
+OBJECT MODULE PLACED IN .\output\PS2.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\PS2.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\PS2.lst) OBJECT(.\output
+                    -\PS2.obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include "MacroAndConst.h"
+   3          #include "PS2.h"
+   4          
+   5          #define SHIFT 0x12
+   6          
+   7          /*
+   8          ╭════════════════════════════════════╮
+   9          ║                                                                        ║
+  10          ║                      硬  件  信  号  定  义                            ║
+  11          ║                                                                        ║
+  12          ╰════════════════════════════════════╯
+  13          */
+  14          
+  15          sbit io_dat_ps2key = P3^5;                  //PS2键盘的数据端口
+  16          sbit io_clk_ps2key = P3^4;                  //PS2键盘的时钟端口
+  17          
+  18          /*
+  19          ╭════════════════════════════════════╮
+  20          ║                                                                        ║
+  21          ║                      键  码  转  换  数  组                            ║
+  22          ║                                                                        ║
+  23          ╰════════════════════════════════════╯
+  24          */
+  25          //没有按下Shift键时的键码转换
+  26          static unsigned char code UnShifted[59][2] = {
+  27                                                                                            0x1C, 'a',0x32, 'b',0x21, 'c',0x23, 'd',0x24, 'e',
+  28                                                        0x2B, 'f',0x34, 'g',0x33, 'h',0x43, 'i',0x3B, 'j',
+  29                                                        0x42, 'k',0x4B, 'l',0x3A, 'm',0x31, 'n',0x44, 'o',
+  30                                                        0x4D, 'p',0x15, 'q',0x2D, 'r',0x1B, 's',0x2C, 't',
+  31                                                        0x3C, 'u',0x2A, 'v',0x1D, 'w',0x22, 'x',0x35, 'y',
+  32                                                        0x1A, 'z',0x45, '0',0x16, '1',0x1E, '2',0x26, '3',
+  33                                                        0x25, '4',0x2E, '5',0x36, '6',0x3D, '7',0x3E, '8',
+  34                                                                                                    0x46, '9',0x0E, '`',0x4E, '-',0x55, '=',0x5D, '\\',
+  35                                                        0x29, ' ',0x54, '[',0x5B, ']',0x4C, ';',0x52, '\'',
+  36                                                        0x41, ',',0x49, '.',0x4A, '/',0x71, '.',0x70, '0',
+  37                                                        0x69, '1',0x72, '2',0x7A, '3',0x6B, '4',0x73, '5',
+  38                                                                                                    0x74, '6',0x6C, '7',0x75, '8',0x7D, '9',
+  39                                                                                                    };
+  40          //按下Shift键时的键码转换
+  41          /*static unsigned char code Shifted[59][2] =  {                                                                                         
+  42                                                                                                    0x1C, 'A',0x32, 'B',0x21, 'C',0x23, 'D',0x24, 'E',
+  43                                                        0x2B, 'F',0x34, 'G',0x33, 'H',0x43, 'I',0x3B, 'J',
+  44                                                        0x42, 'K',0x4B, 'L',0x3A, 'M',0x31, 'N',0x44, 'O',
+  45                                                        0x4D, 'P',0x15, 'Q',0x2D, 'R',0x1B, 'S',0x2C, 'T',
+  46                                                        0x3C, 'U',0x2A, 'V',0x1D, 'W',0x22, 'X',0x35, 'Y',
+  47                                                        0x1A, 'Z',0x45, '0',0x16, '1',0x1E, '2',0x26, '3',
+  48                                                        0x25, '4',0x2E, '5',0x36, '6',0x3D, '7',0x3E, '8',
+  49                                                        0x46, '9',0x0E, '~',0x4E, '_',0x55, '+',0x5D, '|',
+  50                                                        0x29, ' ',0x54, '{',0x5B, '}',0x4C, ':',0x52, '"',
+  51                                                        0x41, '<',0x49, '>',0x4A, '?',0x71, '.',0x70, '0',
+  52                                                        0x69, '1',0x72, '2',0x7A, '3',0x6B, '4',0x73, '5',
+  53                                                                                                    0x74, '6',0x6C, '7',0x75, '8',0x7D, '9',
+  54                                                                                                    };
+C51 COMPILER V9.00   PS2                                                                   10/04/2010 21:52:29 PAGE 2   
+
+  55          /*
+  56          ╭════════════════════════════════════╮
+  57          ║                                                                        ║
+  58          ║                      函  数  原  型  声  明                            ║
+  59          ║                                                                        ║
+  60          ╰════════════════════════════════════╯
+  61          */
+  62          static uchar ReceiveByte(void);
+  63          static void SkipCode(void);
+  64          static uchar ReceiveDat(void);              //接收一个正常键
+  65          static uchar ChangeASCII(uchar dat);        //将接通码转为简码的ASCII码
+  66          uchar ReceiveDatFromPS2KeyBoard(void);      //返回相应按键的ASCII码
+  67          /*
+  68          ╭════════════════════════════════════╮
+  69          ║  函 数 名： static uchar ReceiveByte(void)                             ║
+  70          ║  功能模式： 内部                                                       ║
+  71          ║  函数说明： 返回键盘传送的一个字节.                                    ║
+  72          ║  调用函数： 无                                                         ║
+  73          ║  全局变量： 无                                                         ║
+  74          ║  端口信号:  io_clk_ps2key、io_dat_ps2key                               ║
+  75          ║  输    入： 无                                                         ║
+  76          ║  返    回： 11位数据中的8位数据.                                       ║
+  77          ║  设 计 者： 韩林                  日    期：2007-02-09                 ║
+  78          ║  修 改 者： 韩林                  日    期：2007-02-09                 ║
+  79          ║  E-mail  ： hanlinxp@163.com      QQ： 33737559                        ║
+  80          ║  版    本： v1.0                                                       ║
+  81          ║                                                                        ║
+  82          ║                      Copyright@2006 - 2007                             ║
+  83          ║                                                                        ║
+  84          ╰════════════════════════════════════╯
+  85          */
+  86          static uchar ReceiveByte(void)
+  87          {
+  88   1          uchar i,dat = 0;
+  89   1          while(!io_clk_ps2key);          //起始位0
+  90   1          while(io_clk_ps2key);
+  91   1          for(i=0;i<8;i++)                //接收8位数据
+  92   1          {
+  93   2              dat >>= 1;
+  94   2              if(io_dat_ps2key)
+  95   2                  dat |= 0x80;
+  96   2              while(!io_clk_ps2key);
+  97   2              while(io_clk_ps2key);
+  98   2          }
+  99   1                                          //此处取出奇校验位
+ 100   1          while(!io_clk_ps2key);
+ 101   1          while(io_clk_ps2key);
+ 102   1          while(!io_clk_ps2key);
+ 103   1          return dat;
+ 104   1      }
+ 105          /*
+ 106          ╭════════════════════════════════════╮
+ 107          ║  函 数 名： static void SkipCode(void)                                 ║
+ 108          ║  功能模式： 内部                                                       ║
+ 109          ║  函数说明： 将其余编码跳过.                                            ║
+ 110          ║  调用函数： 无                                                         ║
+ 111          ║  全局变量： 无                                                         ║
+ 112          ║  端口信号:  io_clk_ps2key、io_dat_ps2key                               ║
+ 113          ║  输    入： 无                                                         ║
+ 114          ║  返    回： 无                                                         ║
+ 115          ║  设 计 者： 韩林                  日    期：2007-02-09                 ║
+ 116          ║  修 改 者： 韩林                  日    期：2007-02-09                 ║
+C51 COMPILER V9.00   PS2                                                                   10/04/2010 21:52:29 PAGE 3   
+
+ 117          ║  E-mail  ： hanlinxp@163.com      QQ： 33737559                        ║
+ 118          ║  版    本： v1.0                                                       ║
+ 119          ║                                                                        ║
+ 120          ║                      Copyright@2006 - 2007                             ║
+ 121          ║                                                                        ║
+ 122          ╰════════════════════════════════════╯
+ 123          */
+ 124          static void SkipCode(void)
+ 125          {
+ 126   1          (void)ReceiveByte();
+ 127   1          (void)ReceiveByte();
+ 128   1      }
+ 129          /*
+ 130          ╭════════════════════════════════════╮
+ 131          ║  函 数 名： static uchar ReceiveDat(void)                              ║
+ 132          ║  功能模式： 内部                                                       ║
+ 133          ║  函数说明： 返回键盘按键对应的一个接通码.                              ║
+ 134          ║  调用函数： ReceiveByte()、SkipCode()                                  ║
+ 135          ║  全局变量： 无                                                         ║
+ 136          ║  端口信号:  无                                                         ║
+ 137          ║  输    入： 无                                                         ║
+ 138          ║  返    回： 键盘的接通码.                                              ║
+ 139          ║  设 计 者： 韩林                  日    期：2007-02-08                 ║
+ 140          ║  修 改 者： 韩林                  日    期：2007-02-09                 ║
+ 141          ║  E-mail  ： hanlinxp@163.com      QQ： 33737559                        ║
+ 142          ║  版    本： v1.1                                                       ║
+ 143          ║                                                                        ║
+ 144          ║                      Copyright@2006 - 2007                             ║
+ 145          ║                                                                        ║
+ 146          ╰════════════════════════════════════╯
+ 147          */
+ 148          static uchar ReceiveDat(void)
+ 149          {
+ 150   1          uchar dat;
+ 151   1          if(io_clk_ps2key)                       //如果无键按下,返回0
+ 152   1              return 0;
+ 153   1          dat = ReceiveByte();
+ 154   1          SkipCode();
+ 155   1          return dat;                             //返回接通码
+ 156   1      }
+ 157          /*
+ 158          ╭════════════════════════════════════╮
+ 159          ║  函 数 名： static uchar ChangeASCII(uchar dat)                        ║
+ 160          ║  功能模式： 内部                                                       ║
+ 161          ║  函数说明： 将接通码转为与键盘按键对应的ASCII码.                       ║
+ 162          ║  调用函数： 无                                                         ║
+ 163          ║  全局变量： 无                                                         ║
+ 164          ║  端口信号:  无                                                         ║
+ 165          ║  输    入： 无                                                         ║
+ 166          ║  返    回： 键盘按键的ASCII码.                                         ║
+ 167          ║  设 计 者： 韩林                  日    期：2007-02-08                 ║
+ 168          ║  修 改 者： 韩林                  日    期：2007-02-08                 ║
+ 169          ║  E-mail  ： hanlinxp@163.com      QQ： 33737559                        ║
+ 170          ║  版    本： v1.0                                                       ║
+ 171          ║                                                                        ║
+ 172          ║                      Copyright@2006 - 2007                             ║
+ 173          ║                                                                        ║
+ 174          ╰════════════════════════════════════╯
+ 175          */
+ 176          static uchar ChangeASCII(uchar dat)
+ 177          {
+ 178   1          uchar i;
+C51 COMPILER V9.00   PS2                                                                   10/04/2010 21:52:29 PAGE 4   
+
+ 179   1          if(dat == 0)
+ 180   1              return 0;
+ 181   1          for(i=0;i<59;i++)
+ 182   1          {
+ 183   2              if(UnShifted[i][0] == dat)          //没按Shift键
+ 184   2                  return UnShifted[i][1];
+ 185   2          }
+ 186   1          return 0;
+ 187   1      }
+ 188          /*
+ 189          ╭════════════════════════════════════╮
+ 190          ║  函 数 名： uchar ReceiveDatFromPS2KeyBoard(void)                      ║
+ 191          ║  功能模式： 全局                                                       ║
+ 192          ║  函数说明： 返回键盘按键的ASCII码,没有按键则为0.                       ║
+ 193          ║  调用函数： ChangeASCII()、ReceiveDat()                                ║
+ 194          ║  全局变量： 无                                                         ║
+ 195          ║  端口信号:  无                                                         ║
+ 196          ║  输    入： 无                                                         ║
+ 197          ║  返    回： 键盘按键的ASCII码.                                         ║
+ 198          ║  设 计 者： 韩林                  日    期：2007-02-08                 ║
+ 199          ║  修 改 者： 韩林                  日    期：2007-02-08                 ║
+ 200          ║  E-mail  ： hanlinxp@163.com      QQ： 33737559                        ║
+ 201          ║  版    本： v1.0                                                       ║
+ 202          ║                                                                        ║
+ 203          ║                      Copyright@2006 - 2007                             ║
+ 204          ║                                                                        ║
+ 205          ╰════════════════════════════════════╯
+ 206          */
+ 207          uchar ReceiveDatFromPS2KeyBoard(void)
+ 208          {
+ 209   1          return ChangeASCII(ReceiveDat());
+ 210   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    117    ----
+   CONSTANT SIZE    =    118    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

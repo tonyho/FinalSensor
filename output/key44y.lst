@@ -1,0 +1,173 @@
+C51 COMPILER V9.00   KEY44Y                                                                10/09/2010 00:00:17 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE KEY44Y
+OBJECT MODULE PLACED IN .\output\key44y.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\key44y.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\key44y.lst) OBJECT(.\
+                    -output\key44y.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include "MacroAndConst.h"
+   3          #include "key44y.h"
+   4          
+   5          #define KEYPORT  P0
+   6          
+   7          uint8 KeyVal = 0;
+   8          
+   9          void DelayForKey(uint8 xms)
+  10          {
+  11   1               uint8 i,j;
+  12   1               for(i = xms; i > 0;i-- )
+  13   1                   for(j = 110; j > 0; j-- );          
+  14   1      }
+  15          
+  16          
+  17          uint8 KeyScanValue(void)
+  18          {
+  19   1               char KeyValTemp=0;
+  20   1      /*==================第一排S1~S4=====================*/
+  21   1               KEYPORT = 0xfe;
+  22   1               KeyVal  = KEYPORT;
+  23   1               KeyVal  = KeyVal&0xf0;
+  24   1               if(KeyVal != 0xf0)
+  25   1               {
+  26   2                  DelayForKey(50);
+  27   2                      KeyVal = KEYPORT;
+  28   2                      switch(KeyVal)
+  29   2                      {       
+  30   3                              case 0xee:
+  31   3                                   KeyValTemp = 1;
+  32   3                               break;
+  33   3      
+  34   3                              case 0xde:
+  35   3                                       KeyValTemp = 2;
+  36   3                                   break;     
+  37   3                                       
+  38   3                               case 0xbe:
+  39   3                                   KeyValTemp = 3;
+  40   3                               break;
+  41   3      
+  42   3                              case 0x7e:
+  43   3                                       KeyValTemp = 4;
+  44   3                                   break;             
+  45   3      
+  46   3                              default:
+  47   3                                       KeyValTemp = 0;
+  48   3                      }
+  49   2               }
+  50   1      
+  51   1      /*==================第二排S5~S8=====================*/
+  52   1                       KEYPORT = 0xfd;
+  53   1               KeyVal  = KEYPORT;
+  54   1               KeyVal  = KeyVal&0xf0;
+C51 COMPILER V9.00   KEY44Y                                                                10/09/2010 00:00:17 PAGE 2   
+
+  55   1               if(KeyVal != 0xf0)
+  56   1               {
+  57   2                  DelayForKey(100);
+  58   2                      KeyVal = KEYPORT;
+  59   2                      switch(KeyVal)
+  60   2                      {       
+  61   3                              case 0xed:
+  62   3                                   KeyValTemp = 5;
+  63   3                               break;
+  64   3      
+  65   3                              case 0xdd:
+  66   3                                       KeyValTemp = 6;
+  67   3                                   break;     
+  68   3                                       
+  69   3                              case 0xbd:
+  70   3                                   KeyValTemp = 7;
+  71   3                               break;
+  72   3      
+  73   3                              case 0x7d:
+  74   3                                       KeyValTemp = 8;
+  75   3                                   break;             
+  76   3      
+  77   3                              default:
+  78   3                                       KeyValTemp = 0;
+  79   3                      }
+  80   2               }
+  81   1      
+  82   1      /*==================第三排S9~S12=====================*/
+  83   1                       KEYPORT = 0xfb;
+  84   1               KeyVal  = KEYPORT;
+  85   1               KeyVal  = KeyVal&0xf0;
+  86   1               if(KeyVal != 0xf0)
+  87   1               {
+  88   2                  DelayForKey(100);
+  89   2                      KeyVal = KEYPORT;
+  90   2                      switch(KeyVal)
+  91   2                      {       
+  92   3                              case 0xeb:
+  93   3                                   KeyValTemp = 10;
+  94   3                               break;
+  95   3      
+  96   3                              case 0xdb:
+  97   3                                       KeyValTemp = 9;
+  98   3                                   break;     
+  99   3                                       
+ 100   3                               case 0xbb:
+ 101   3                                   KeyValTemp = 11;
+ 102   3                               break;
+ 103   3      
+ 104   3                              case 0x7b:
+ 105   3                                       KeyValTemp = 12;
+ 106   3                                   break;             
+ 107   3      
+ 108   3                              default:
+ 109   3                                       KeyValTemp = 0;
+ 110   3                      }
+ 111   2               }
+ 112   1      
+ 113   1      /*==================第四排S13~S16=====================*/
+ 114   1                       KEYPORT = 0xf7;
+ 115   1               KeyVal  = KEYPORT;
+ 116   1               KeyVal  = KeyVal&0xf0;
+C51 COMPILER V9.00   KEY44Y                                                                10/09/2010 00:00:17 PAGE 3   
+
+ 117   1               if(KeyVal != 0xf0)
+ 118   1               {
+ 119   2                  DelayForKey(100);
+ 120   2                      KeyVal = KEYPORT;
+ 121   2                      switch(KeyVal)
+ 122   2                      {       
+ 123   3                              case 0xe7:
+ 124   3                                   KeyValTemp = 13;
+ 125   3                               break;
+ 126   3      
+ 127   3                              case 0xd7:
+ 128   3                                       KeyValTemp = 14;
+ 129   3                                   break;     
+ 130   3                                       
+ 131   3                               case 0xb7:
+ 132   3                                   KeyValTemp = 15;
+ 133   3                               break;
+ 134   3      
+ 135   3                              case 0x77:
+ 136   3                                       KeyValTemp = 16;
+ 137   3                                   break;             
+ 138   3      
+ 139   3                              default:
+ 140   3                                       KeyValTemp = 0;
+ 141   3                      }
+ 142   2               }
+ 143   1      
+ 144   1              return KeyValTemp;      
+ 145   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    276    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

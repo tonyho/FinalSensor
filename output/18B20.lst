@@ -1,0 +1,138 @@
+C51 COMPILER V9.00   18B20                                                                 10/09/2010 00:00:17 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE 18B20
+OBJECT MODULE PLACED IN .\output\18B20.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\18B20.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\18B20.lst) OBJECT(.\ou
+                    -tput\18B20.obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include "MacroAndConst.h"
+   3          #include "18B20.h"
+   4          
+   5          sbit TMDAT=P3^6;    //DS1820温度接口
+   6          bit f;             //负温度标志
+   7          bit flag;          //DS1820初始化成功标志
+   8          unsigned char tempint,tempdf;             //温度整数部分和小数部分
+   9          
+  10          void set_ds1820()              //初始化DS1820
+  11          {
+  12   1              while(1)
+  13   1              {
+  14   2                      uchar delay;
+  15   2                      flag=0;
+  16   2                      TMDAT=1;                  //总线高电平
+  17   2                      delay=1;
+  18   2                      while(--delay);           //稍微延时
+  19   2                      TMDAT=0;                  //总线拉低
+  20   2                      delay=250;
+  21   2                      while(--delay);           //延时500us
+  22   2                      TMDAT=1;                  //拉高总线
+  23   2                      delay=30;
+  24   2                      while(--delay);           //延时60us
+  25   2                      while(!TMDAT)             //当DS1820拉低总线
+  26   2                      {
+  27   3                              delay=120;  
+  28   3                              while(--delay);        //延时240us
+  29   3                              if(TMDAT)
+  30   3                              {
+  31   4                                      flag=1;             //DS1820初始化成功标志
+  32   4                                      break;
+  33   4                              }
+  34   3                      }
+  35   2                      if(flag)                  //初始化成功后再延时480us,时序要求
+  36   2                      {
+  37   3                              delay=240;
+  38   3                              while(--delay);
+  39   3                              break;
+  40   3                      }
+  41   2              }
+  42   1      }
+  43          
+  44          void write_ds1820(uchar command)  //写8位
+  45          {
+  46   1              uchar delay,i;
+  47   1              for(i=8;i>0;i--)               //循环8次写入
+  48   1              {
+  49   2                      TMDAT=0;                    //拉低总线
+  50   2                      delay=6;
+  51   2                      while(--delay);             //延时12us
+  52   2                      TMDAT=command&0x01;         //将数据放在总线上，进行采样
+  53   2                      delay=25;
+  54   2                      while(--delay);             //延时50us，采样完毕
+C51 COMPILER V9.00   18B20                                                                 10/09/2010 00:00:17 PAGE 2   
+
+  55   2                      command=command>>1;         //数据右移一位，准备下次数据
+  56   2                      TMDAT=1;                    //释放总线
+  57   2              }
+  58   1      }
+  59          
+  60          void read_ds1820()                //读
+  61          {
+  62   1              uchar delay,i,j,k,temp,temph,templ;
+  63   1              j=2;                           //读2位字节数据
+  64   1              do
+  65   1              {
+  66   2                      for(i=8;i>0;i--)            //一个字节分8位读取
+  67   2                      {
+  68   3                              temp>>=1;                //读取1位右移1位
+  69   3                              TMDAT=0;                 //数据线置低电平
+  70   3                              delay=1;
+  71   3                              while(--delay);          //延时2us
+  72   3                              TMDAT=1;                 //拉高总线
+  73   3                              delay=4;
+  74   3                              while(--delay);          //延时8us
+  75   3                              if(TMDAT)temp|=0x80;     //读取1位数据
+  76   3                              delay=25;
+  77   3                              while(--delay);          //读取1位数据后延时50us
+  78   3                      }
+  79   2                      if(j==2)templ=temp;         //读取的第一字节存templ
+  80   2                      else temph=temp;            //读取的第二字节存temph
+  81   2              }while(--j);
+  82   1              f=0;                           //初始温度标志为正
+  83   1              if((temph&0xf8)!=0x00)         //若温度为负的处理，对二进制补码的处理
+  84   1              {
+  85   2                      f=1;                        //为负温度f置1
+  86   2                      temph=~temph;
+  87   2                      templ=~templ;
+  88   2                      k=templ+1;
+  89   2                      templ=k;
+  90   2                      if(k>255)
+  91   2                      {
+  92   3                              temph++;
+  93   3                      }
+  94   2              }
+  95   1              tempdf=templ&0x0f;            //将读取的数据转换成温度值，整数部分存tempint,小数部分存tempdf
+  96   1              templ>>=4;
+  97   1              temph<<=4;
+  98   1              tempint=temph|templ;
+  99   1      }
+ 100          
+ 101          void get_temperature()           //温度转换、获得温度子程序
+ 102          {
+ 103   1              set_ds1820();                 //初始化DS18B20
+ 104   1              write_ds1820(0xcc);           //发跳过ROM匹配命令
+ 105   1              write_ds1820(0x44);           //发温度转换命令
+ 106   1              set_ds1820();                 //初始化DS18B20
+ 107   1              write_ds1820(0xcc);           //发跳过ROM匹配命令
+ 108   1              write_ds1820(0xbe);           //发出读温度命令
+ 109   1              read_ds1820();                //将读出的温度数据保存到tempint和tempdf处
+ 110   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    189    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.00   18B20                                                                 10/09/2010 00:00:17 PAGE 3   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

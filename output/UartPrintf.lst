@@ -1,0 +1,175 @@
+C51 COMPILER V9.00   UARTPRINTF                                                            10/09/2010 00:00:18 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE UARTPRINTF
+OBJECT MODULE PLACED IN .\output\UartPrintf.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\UartPrintf.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\UartPrintf.lst) O
+                    -BJECT(.\output\UartPrintf.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include "UartPrintf.h"
+   3          
+   4          /****************************************************************
+   5          初始化串口，11.0592MHz晶振时，支持波特率：1200，2400,4800 9600
+   6          ****************************************************************/
+   7          void Uart_Init(unsigned int Rate)
+   8          {
+   9   1              SCON= 0x40;                //串口方式1
+  10   1              REN=1;                     //允许接收
+  11   1              TMOD= 0x20;                //定时器1定时方式2
+  12   1              TR1 = 1;
+  13   1              switch(Rate)
+  14   1              {
+  15   2                      case 1200:
+  16   2                      PCON &=0x7f;                     //SMOD=0       
+  17   2                      TH1= 0xe8;                //11.0592MHz 1200波特率
+  18   2                      TL1= 0xe8; 
+  19   2                      break;
+  20   2              
+  21   2                      case 2400:
+  22   2                      PCON |= 0x80;                     //SMOD=1
+  23   2                      TH1= 0xe8;                //11.0592MHz 2400波特率
+  24   2                      TL1= 0xe8;
+  25   2                      break;
+  26   2      
+  27   2                      case 4800:
+  28   2                      PCON |= 0x80;                     //SMOD=1
+  29   2                      TH1= 0xf4;                //11.0592MHz 4800波特率
+  30   2                      TL1= 0xf4;
+  31   2                      break;
+  32   2                      
+  33   2                      case 9600:
+  34   2                      PCON |= 0x80;                     //SMOD=1
+  35   2                      TH1= 0xfa;                //11.0592MHz 4800波特率
+  36   2                      TL1= 0xfa;
+  37   2                      break;
+  38   2      
+  39   2                      default:
+  40   2                      PCON |= 0x80;             
+  41   2                      TH1= 0xf4;                //默认4800波特率
+  42   2                      TL1= 0xf4;
+  43   2                      break;
+  44   2              }
+  45   1              EA = 1;
+  46   1      //      ES = 1;
+  47   1              ET1= 0; 
+  48   1              
+  49   1      }
+  50          
+  51          
+  52          /********************************************************************************
+  53           串口输出函数，调用前要先调用Uart_Init(unsigned int Rate)，用法基本和printf一样。
+  54           例如输出"I Love You"，Uart_Printf("I Love You");
+C51 COMPILER V9.00   UARTPRINTF                                                            10/09/2010 00:00:18 PAGE 2   
+
+  55           
+  56           %c  输出字符
+  57           %d  输出十进制
+  58           %b  输出8位二进制
+  59           %n  换行(不是\n)
+  60          ********************************************************************************/ 
+  61          void Uart_Printf(unsigned char *s,unsigned char n,...)
+  62          {
+  63   1              unsigned char *ps=s;
+  64   1              unsigned char *pn=&n;
+  65   1              unsigned char t3,t2,t1;
+  66   1      
+  67   1      //      TR1= 1;  // 因为是TR1  作为波特率发生器
+  68   1              TR1 = 1;
+  69   1              EA = 0;
+  70   1              ES = 0;//        
+  71   1              while(*ps!=0)   
+  72   1              {
+  73   2                      if(*ps=='%' && *(ps+1)=='c')  //输出字符
+  74   2                      {
+  75   3                              SBUF=*pn;
+  76   3                              pn++;
+  77   3                              ps+=2;
+  78   3                              while(TI==0);
+  79   3                              TI=0;
+  80   3                      }
+  81   2      
+  82   2                      else if(*ps=='%' && *(ps+1)=='d') //输出十进制
+  83   2                      {
+  84   3                              t3=*pn/100;
+  85   3                              t2=(*pn%100)/10;
+  86   3                              t1=(*pn%100)%10;
+  87   3                      
+  88   3                              if(t3>0)
+  89   3                              {
+  90   4                                      SBUF=t3+48;
+  91   4                                      while(TI==0);
+  92   4                                      TI=0;
+  93   4                              }
+  94   3                              if(t3>0 || t2>0)
+  95   3                              {
+  96   4                                      SBUF=t2+48;
+  97   4                                      while(TI==0);
+  98   4                                      TI=0;
+  99   4                              }       
+ 100   3              
+ 101   3                              SBUF=t1+48;
+ 102   3                              pn++;
+ 103   3                              ps+=2;
+ 104   3                              while(TI==0);
+ 105   3                              TI=0;
+ 106   3                                
+ 107   3                      }
+ 108   2      
+ 109   2                      else if(*ps=='%' && *(ps+1)=='b')  //输出二进制
+ 110   2                      {
+ 111   3                              for(t1=7;t1 >= 0;t1--)
+ 112   3                              {
+ 113   4                                      SBUF=((*pn >> t1) & 0x01)+48; 
+ 114   4                                      while(TI==0);
+ 115   4                                      TI=0;
+ 116   4                              }
+C51 COMPILER V9.00   UARTPRINTF                                                            10/09/2010 00:00:18 PAGE 3   
+
+ 117   3                              pn++;
+ 118   3                              ps+=2;
+ 119   3                      }
+ 120   2      
+ 121   2                      else if(*ps=='%' && *(ps+1)=='n')   //输出换行符
+ 122   2                      {
+ 123   3                              SBUF=0x0d;
+ 124   3                              while(TI==0);
+ 125   3                              TI=0;
+ 126   3      
+ 127   3                              SBUF=0x0a;
+ 128   3                              while(TI==0);
+ 129   3                              TI=0;
+ 130   3      
+ 131   3                              ps+=2;
+ 132   3                      }
+ 133   2      
+ 134   2                      else
+ 135   2                      {
+ 136   3                              SBUF=*ps;
+ 137   3                              ps++;
+ 138   3                              while(TI==0);
+ 139   3                              TI=0;
+ 140   3                      }
+ 141   2                      
+ 142   2              }
+ 143   1                       EA = 1;
+ 144   1                      ES = 1;
+ 145   1      //      TR1= 0;
+ 146   1      
+ 147   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    459    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      25
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

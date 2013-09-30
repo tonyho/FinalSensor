@@ -1,0 +1,1 @@
+"src\uart.c" BROWSE DEBUG OBJECTEXTEND PRINT(.\output\uart.lst) OBJECT(.\output\uart.obj)

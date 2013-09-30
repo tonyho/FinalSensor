@@ -1,0 +1,254 @@
+C51 COMPILER V9.00   UARTMODIFY1302                                                        10/04/2010 21:52:29 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE UARTMODIFY1302
+OBJECT MODULE PLACED IN .\output\UartModify1302.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\UartModify1302.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\UartModify130
+                    -2.lst) OBJECT(.\output\UartModify1302.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include "MacroAndConst.h"
+   3          #include "uart.h"
+   4          #include "DS1302DY.h"
+   5          #include "UartModify1302.h"
+   6          
+   7          unsigned char code END_CODE[4] = "#end";
+   8          unsigned char  end_num = 0;
+   9          unsigned char  Data_num = 0;            // 接收数据个数记录
+  10          unsigned char  commd[30];                       // 接收数据缓存
+  11          unsigned char  D_add;                           // 数据地址
+  12          bit                    flag_deal = 0;           // 处理标志
+  13          //---------------------------------------------------
+  14          
+  15          //用来储存Uart收到的各个值  共7个   年 月 日 时 分 秒 星期 也就是储存每个state量  注意因为要保持两位数故要
+             -用uint16 而不是8
+  16          uint8 Uart_1302_Temp_Val[7];  
+  17          
+  18          //**************************数据转换*************************************
+  19          unsigned char DEC_conver(void)
+  20          {
+  21   1              unsigned char state,i;
+  22   1              state = 0;      //储存字符的中间变量
+  23   1              i = 2;                  // 从commd[2] 即第三个开始  因为第一个是W或者R 第二个是空格 所以从第三个开始
+  24   1      //-----------------------计算地址-------------------------------
+  25   1              while(1)
+  26   1              {
+  27   2                      if( (commd[i]>47)&&(commd[i]<58) )                      // 是‘0’-‘9’？ 从48到57共10个 分别是'0'到'9'
+  28   2                              state = (state*10)+(commd[i]-48);               // 计算对应的ASCII码值   + state*10 指的是
+  29   2      
+  30   2                      else if( commd[i]==' ' )
+  31   2                              break;                  // 是空格,跳出   什么也不储存 所以跳出
+  32   2      
+  33   2                      else                                                                                                    // 非'0'-'9'和' '
+  34   2                      {
+  35   3                              UART_TXDSTRING("add格式错误！请重新输入",1);
+  36   3                              return ERROR;                                                                   // 返回错误
+  37   3                      }
+  38   2      
+  39   2                      if( i>4 )       // i表示Address的位数 这句用来限制地址的位数如果大约4，那么地址就是3位了,这超出了AT24C02的最大
+             -地址
+  40   2                      {
+  41   3                              UART_TXDSTRING("Address不能超过三位！请重新输入",1);
+  42   3                              return ERROR;
+  43   3                      }
+  44   2      
+  45   2                      i++;
+  46   2              }
+  47   1       Uart_1302_Temp_Val[0] = state;
+  48   1      //      commd[0] = state;                                                                               // 地址存放在commd[0]中
+  49   1      //-------------------------计算数据个数--------------------------------
+  50   1              i++;
+  51   1              state = 0;
+  52   1              while(1)
+C51 COMPILER V9.00   UARTMODIFY1302                                                        10/04/2010 21:52:29 PAGE 2   
+
+  53   1              {
+  54   2                      if( (commd[i]>47)&&(commd[i]<58) )
+  55   2                              state = (state*10)+(commd[i]-48);
+  56   2                      else if( commd[i]==' ' )        break;
+  57   2                      else 
+  58   2                      {
+  59   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+  60   3                              return ERROR;
+  61   3                      }
+  62   2                      if( i>8 )
+  63   2                      {
+  64   3                              UART_TXDSTRING("number太大！请重新输入",1);
+  65   3                              return ERROR;
+  66   3                      }
+  67   2                      i++;
+  68   2              }
+  69   1      //      commd[1] = state;                                       // 操作个数存放在commd[1]中
+  70   1       Uart_1302_Temp_Val[1] = state;
+  71   1      
+  72   1       //###############第三个数据#####################//
+  73   1                      i++;
+  74   1              state = 0;
+  75   1              while(1)
+  76   1              {
+  77   2                      if( (commd[i]>47)&&(commd[i]<58) )
+  78   2                              state = (state*10)+(commd[i]-48);
+  79   2                      else if( commd[i]==' ' )        break;
+  80   2                      else 
+  81   2                      {
+  82   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+  83   3                              return ERROR;
+  84   3                      }
+  85   2                      if( i>8 )
+  86   2                      {
+  87   3                              UART_TXDSTRING("number太大！请重新输入",1);
+  88   3                              return ERROR;
+  89   3                      }
+  90   2                      i++;
+  91   2              }
+  92   1      //      commd[2] = state;                                       // 操作个数存放在commd[1]中
+  93   1       Uart_1302_Temp_Val[2] = state;
+  94   1      
+  95   1      //---------------------------------------------------------------------
+  96   1              
+  97   1              
+  98   1       //###############第四个数据#####################//
+  99   1                      i++;
+ 100   1              state = 0;
+ 101   1              while(1)
+ 102   1              {
+ 103   2                      if( (commd[i]>47)&&(commd[i]<58) )
+ 104   2                              state = (state*10)+(commd[i]-48);
+ 105   2                      else if( commd[i]==' ' )        break;
+ 106   2                      else 
+ 107   2                      {
+ 108   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+ 109   3                              return ERROR;
+ 110   3                      }
+ 111   2                      if( i>8 )
+ 112   2                      {
+ 113   3                              UART_TXDSTRING("number太大！请重新输入",1);
+ 114   3                              return ERROR;
+C51 COMPILER V9.00   UARTMODIFY1302                                                        10/04/2010 21:52:29 PAGE 3   
+
+ 115   3                      }
+ 116   2                      i++;
+ 117   2              }
+ 118   1              commd[3] = state;                                       // 操作个数存放在commd[1]中
+ 119   1       Uart_1302_Temp_Val[3] = state;
+ 120   1      //--------------------------------------------------------------------- 
+ 121   1      
+ 122   1      
+ 123   1       //###############第五个数据#####################//
+ 124   1                      i++;
+ 125   1              state = 0;
+ 126   1              while(1)
+ 127   1              {
+ 128   2                      if( (commd[i]>47)&&(commd[i]<58) )
+ 129   2                              state = (state*10)+(commd[i]-48);
+ 130   2                      else if( commd[i]==' ' )        break;
+ 131   2                      else 
+ 132   2                      {
+ 133   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+ 134   3                              return ERROR;
+ 135   3                      }
+ 136   2                      if( i>8 )
+ 137   2                      {
+ 138   3                              UART_TXDSTRING("number太大！请重新输入",1);
+ 139   3                              return ERROR;
+ 140   3                      }
+ 141   2                      i++;
+ 142   2              }
+ 143   1      //      commd[4] = state;                                       // 操作个数存放在commd[1]中
+ 144   1       Uart_1302_Temp_Val[4] = state;
+ 145   1      //---------------------------------------------------------------------
+ 146   1      
+ 147   1      
+ 148   1      
+ 149   1       //###############第六个数据#####################//
+ 150   1                      i++;
+ 151   1              state = 0;
+ 152   1              while(1)
+ 153   1              {
+ 154   2                      if( (commd[i]>47)&&(commd[i]<58) )
+ 155   2                              state = (state*10)+(commd[i]-48);
+ 156   2                      else if( commd[i]==' ' )        break;
+ 157   2                      else 
+ 158   2                      {
+ 159   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+ 160   3                              return ERROR;
+ 161   3                      }
+ 162   2                      if( i>8 )
+ 163   2                      {
+ 164   3                              UART_TXDSTRING("number太大！请重新输入",1);
+ 165   3                              return ERROR;
+ 166   3                      }
+ 167   2                      i++;
+ 168   2              }
+ 169   1              //commd[5] = state;                                     // 操作个数存放在commd[1]中
+ 170   1               Uart_1302_Temp_Val[5] = state;
+ 171   1      //---------------------------------------------------------------------
+ 172   1      
+ 173   1      
+ 174   1       //###############第七个数据#####################//
+ 175   1                      i++;
+ 176   1              state = 0;
+C51 COMPILER V9.00   UARTMODIFY1302                                                        10/04/2010 21:52:29 PAGE 4   
+
+ 177   1              while(1)
+ 178   1              {
+ 179   2                      if( (commd[i]>47)&&(commd[i]<58) )
+ 180   2                              state = (state*10)+(commd[i]-48);  
+ 181   2                              // 第一次进入后state=0 得到的是十位的数值  (如果是两位数,eg:12)然后第二次运行时state=1 这样就得到了完整
+             -的两位数
+ 182   2                      else if( commd[i]==' ' )        break;   // 只有这个才能跳出while  
+ 183   2                      else 
+ 184   2                      {
+ 185   3                              UART_TXDSTRING("number格式错误！请重新输入",1);
+ 186   3                              return ERROR;
+ 187   3                      }
+ 188   2                      if( i>8 )
+ 189   2                      {
+ 190   3                              UART_TXDSTRING("number太大！请重新输入",1);
+ 191   3                              return ERROR;
+ 192   3                      }
+ 193   2                      i++;
+ 194   2              }
+ 195   1      //      commd[6] = state;                                       // 操作个数存放在commd[1]中
+ 196   1       Uart_1302_Temp_Val[6] = state;
+ 197   1      //---------------------------------------------------------------------
+ 198   1      
+ 199   1              
+ 200   1              D_add = ++i;                                            // 记录数据地址
+ 201   1              return SUCC;                                            // 正确 
+ 202   1      }
+ 203          
+ 204          
+ 205          void UartChangeDS1302()
+ 206          {
+ 207   1              
+ 208   1              if( DEC_conver()==ERROR )       return;                 // 错误，返回
+ 209   1      
+ 210   1              else
+ 211   1              {       
+ 212   2                      ys  = Uart_1302_Temp_Val[0]     ;
+ 213   2                      mn  = Uart_1302_Temp_Val[1]     ;
+ 214   2                      day = Uart_1302_Temp_Val[2]     ;
+ 215   2                      hr  = Uart_1302_Temp_Val[3]     ;
+ 216   2                      min = Uart_1302_Temp_Val[4]     ;
+ 217   2                      sec = Uart_1302_Temp_Val[5]     ;
+ 218   2                      we  = Uart_1302_Temp_Val[6]     ;
+ 219   2          }
+ 220   1          DS1302_Write_Ini_Data(ys,mn,day,hr,min,sec,we);
+ 221   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    611    ----
+   CONSTANT SIZE    =    108    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     40       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

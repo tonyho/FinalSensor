@@ -1,0 +1,8 @@
+".\output\main.obj",
+".\output\18B20.obj",
+".\output\DS1302DY.obj",
+".\output\LCD1602YT.obj",
+".\output\key44y.obj",
+".\output\UartPrintf.obj" 
+TO ".\output\FinalSensor" 
+PRINT(".\output\FinalSensor.m51") RAMSIZE(256) 

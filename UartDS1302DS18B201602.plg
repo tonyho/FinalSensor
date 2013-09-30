@@ -1,0 +1,55 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Project:</h2>
+C:\Users\Tony\Desktop\SensorProject\Module\UartDS1302DS18B201602\UartDS1302DS18B201602.uvproj
+Project File Date:  09/21/2010
+
+<h2>Output:</h2>
+Build target 'Target 1'
+compiling 18B20.c...
+compiling DS1302DY.c...
+compiling LCD1602YT.c...
+compiling main.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DISS?LCD1602YT
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?DELAY300MS?MAIN
+Program Size: data=38.2 xdata=0 code=1347
+creating hex file from ".\output\UartDS1302DS18B201602"...
+".\output\UartDS1302DS18B201602" - 0 Error(s), 2 Warning(s).
+Build target 'Target 1'
+compiling main.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DISS?LCD1602YT
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?UART_INIT?MAIN
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_UART_TXDSTRING?MAIN
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?DELAY300MS?MAIN
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?CO?MAIN
+Program Size: data=38.2 xdata=0 code=1446
+creating hex file from ".\output\UartDS1302DS18B201602"...
+".\output\UartDS1302DS18B201602" - 0 Error(s), 5 Warning(s).
+Build target 'Target 1'
+compiling 18B20.c...
+compiling DS1302DY.c...
+compiling LCD1602YT.c...
+compiling main.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_DISS?LCD1602YT
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_UART_TXDSTRING?MAIN
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?DELAY300MS?MAIN
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?CO?MAIN
+Program Size: data=38.2 xdata=0 code=1449
+creating hex file from ".\output\UartDS1302DS18B201602"...
+".\output\UartDS1302DS18B201602" - 0 Error(s), 4 Warning(s).

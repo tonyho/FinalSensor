@@ -1,0 +1,255 @@
+C51 COMPILER V9.00   DS1302DY                                                              10/09/2010 00:00:17 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE DS1302DY
+OBJECT MODULE PLACED IN .\output\DS1302DY.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\DS1302DY.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\DS1302DY.lst) OBJEC
+                    -T(.\output\DS1302DY.obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include<intrins.h>
+   3          #include "DS1302DY.h"
+   4          
+   5          
+   6           //DS1302_Write_Ini_Data(0xa,0x9,0x29,0x23,0x59,0x55,0x7);
+   7          //  DS1302_Write_Ini_Data(0x99,0x12,0x31,0x23,0x59,0x55,0x7);
+   8          
+   9          unsigned char sec,min,hr,day,we,mn,ys;
+  10          
+  11          sbit clk=P2^3;
+  12          sbit dat=P2^4;
+  13          sbit rst=P2^5;
+  14          
+  15          sbit A0=ACC^0;
+  16          sbit A1=ACC^1;
+  17          sbit A2=ACC^2;      
+  18          sbit A3=ACC^3;
+  19          sbit A4=ACC^4;
+  20          sbit A5=ACC^5;
+  21          sbit A6=ACC^6;
+  22          sbit A7=ACC^7;
+  23          
+  24          //-------------------------------------------------------
+  25          void InputByte(unsigned char dd)        //向ds1302 写一个字节数据
+  26             {
+  27   1           unsigned char i;
+  28   1           ACC=dd;
+  29   1           for(i=8;i>0;i--)
+  30   1            {
+  31   2             dat=A0;
+  32   2             clk=1;
+  33   2             clk=0;
+  34   2             ACC=ACC>>=1;
+  35   2              }
+  36   1         }  
+  37          //-------------------------------------------------------
+  38          unsigned char OutputByte(void)      //ds1302 读取一个字节的数据
+  39             {
+  40   1           unsigned char i;
+  41   1           dat=1;      
+  42   1           for(i=8;i>0;i--)
+  43   1            {
+  44   2              ACC=ACC>>1;
+  45   2              A7=dat;
+  46   2              clk=1;
+  47   2              clk=0;
+  48   2              }      
+  49   1            return(ACC);
+  50   1           }
+  51          //------------------------------------------------------------------------
+  52          void Write(unsigned char addr,unsigned char num)          //向ds1302 指定地址写一个字节数据
+  53            {
+  54   1          rst=0;
+C51 COMPILER V9.00   DS1302DY                                                              10/09/2010 00:00:17 PAGE 2   
+
+  55   1          clk=0;
+  56   1          rst=1;
+  57   1          InputByte(addr);  
+  58   1          InputByte(num);    
+  59   1          clk=1;
+  60   1          rst=0;
+  61   1          }
+  62          //---------------------------------------------------------------------
+  63          unsigned char Read(unsigned char addr)                      //从ds1302指定地址读取一个字节的数据
+  64            {
+  65   1          unsigned char dd=0;
+  66   1          rst=0;
+  67   1          clk=0;
+  68   1          rst=1;
+  69   1          InputByte(addr);
+  70   1          dd=OutputByte();
+  71   1          clk=1;
+  72   1          rst=0;
+  73   1          return(dd);
+  74   1         }
+  75          //--------------------------------------------------------------
+  76          unsigned char ReadSec()
+  77            {
+  78   1         unsigned char dd; 
+  79   1         dd=Read(0x81);
+  80   1       //  dd=(0xff & (dd>>4))*10 +(0xf & dd);    // Del
+  81   1              dd = dd/16*10 + dd % 16;         //Add     这个是将BCD码转换成十进制  因为DS1302中保存的值是BCD码形式
+  82   1         return(dd);
+  83   1         }
+  84          //--------------------------------------------------------------
+  85          unsigned char ReadMin()
+  86            {
+  87   1         unsigned char dd; 
+  88   1         dd=Read(0x83);
+  89   1              dd = dd/16*10 + dd % 16;         //Add
+  90   1         return(dd);
+  91   1          }       
+  92          //--------------------------------------------------------------
+  93          unsigned char ReadHr()
+  94            {
+  95   1          unsigned char dd; 
+  96   1          dd=Read(0x85);
+  97   1              dd = dd/16*10 + dd % 16;    //Add
+  98   1          return(dd);
+  99   1         }
+ 100          //------------------------------------------------------------   
+ 101          unsigned char ReadWe()
+ 102            {
+ 103   1          unsigned char dd; 
+ 104   1          dd=Read(0x8b);
+ 105   1                      //dd = dd/16*10 + dd % 16;       //Add
+ 106   1          return(dd);
+ 107   1          }
+ 108          //------------------------------------------------------------
+ 109          unsigned char ReadDay()
+ 110            {
+ 111   1          unsigned char dd; 
+ 112   1          dd=Read(0x87);
+ 113   1              
+ 114   1              dd = dd/16*10 + dd % 16;         //Add
+ 115   1                      
+ 116   1          return(dd);
+C51 COMPILER V9.00   DS1302DY                                                              10/09/2010 00:00:17 PAGE 3   
+
+ 117   1         }
+ 118          //------------------------------------------------------------
+ 119          unsigned char ReadMn()
+ 120            {
+ 121   1          unsigned char dd; 
+ 122   1          dd=Read(0x89);
+ 123   1              dd=(0xff & (dd>>4))*10 +(0xf & dd);
+ 124   1          return(dd);
+ 125   1         }
+ 126          //------------------------------------------------------------
+ 127          unsigned char ReadYs()
+ 128            {
+ 129   1          unsigned char dd; 
+ 130   1          dd=Read(0x8d);
+ 131   1              dd=(0xff & (dd>>4))*10 +(0xf & dd);
+ 132   1          return(dd);
+ 133   1         }
+ 134          //------------------------------------------------------------
+ 135          void WriteSec(unsigned char num)
+ 136                {
+ 137   1                 num = num / 10 *16 + num % 10;   // Add        这个是将十进制数字转换BCD码 再写入 因为DS1302中保存的值是BCD
+             -码形式
+ 138   1             Write(0x80,num);
+ 139   1             }
+ 140          //-----------------------------------------------------------
+ 141          void WriteMin(unsigned char num)
+ 142            {
+ 143   1         num = num / 10 *16 + num % 10;   // Add
+ 144   1          Write(0x82,num);
+ 145   1         }
+ 146          //-----------------------------------------------------------
+ 147          void WriteHr(unsigned char num)
+ 148            {
+ 149   1         num = num / 10 *16 + num % 10;   // Add
+ 150   1          Write(0x84,num);
+ 151   1         }
+ 152          //-----------------------------------------------------------
+ 153          void WriteDay(unsigned char num)
+ 154           {
+ 155   1        num = num / 10 *16 + num % 10;   // Add
+ 156   1         Write(0x86,num);
+ 157   1        }
+ 158          //-----------------------------------------------------------
+ 159          void WriteMn(unsigned char num)
+ 160            {
+ 161   1         num = num / 10 *16 + num % 10;   // Add
+ 162   1          Write(0x88,num);
+ 163   1         }
+ 164          //-----------------------------------------------------------
+ 165          void WriteWe(unsigned char num)
+ 166           {
+ 167   1       // num = num / 10 *16 + num % 10;   // Add
+ 168   1         Write(0x8a,num);
+ 169   1         }
+ 170          //-----------------------------------------------------------
+ 171          void WriteYs(unsigned char num)
+ 172            {
+ 173   1         num = num / 10 *16 + num % 10;   // Add
+ 174   1          Write(0x8c,num);
+ 175   1         }
+ 176          //-----------------------------------------------------------
+ 177          void DisableWR(void)        //write data,read 0
+C51 COMPILER V9.00   DS1302DY                                                              10/09/2010 00:00:17 PAGE 4   
+
+ 178           {
+ 179   1       
+ 180   1         Write(0x8e,0x00);
+ 181   1         }
+ 182          //----------------------------------------------------------
+ 183          void EnableWR(void)              //can''d write,read data   
+ 184           {
+ 185   1         Write(0x85,0x80);
+ 186   1        }
+ 187          
+ 188           void   DS1308_init()
+ 189           {
+ 190   1              DisableWR();
+ 191   1              EnableWR();         
+ 192   1          WriteSec(50);                            //写入时间和日期
+ 193   1          WriteMin(59);
+ 194   1          WriteHr(23);
+ 195   1          WriteDay(31);
+ 196   1          WriteWe(12);
+ 197   1          WriteMn(10);  
+ 198   1          WriteYs(10);
+ 199   1       }
+ 200           void DS1302_Write_Ini_Data(yea,mon,day,hou,min,sec,wee)
+ 201           {
+ 202   1              DisableWR();
+ 203   1              EnableWR();  
+ 204   1      
+ 205   1              WriteSec(sec);
+ 206   1              WriteMn(mon);
+ 207   1              WriteWe(wee);
+ 208   1              WriteYs(yea);
+ 209   1              WriteDay(day);
+ 210   1              WriteHr(hou);
+ 211   1              WriteMin(min);
+ 212   1       }
+ 213          
+ 214           void  read_DS1308()
+ 215           {
+ 216   1          sec=ReadSec();                               //读取时间和日期
+ 217   1          min=ReadMin();
+ 218   1          hr= ReadHr();
+ 219   1          day=ReadDay();
+ 220   1          we= ReadWe();
+ 221   1          mn= ReadMn();
+ 222   1          ys= ReadYs();
+ 223   1       
+ 224   1       }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    499    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7      14
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
